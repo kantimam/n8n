@@ -13,6 +13,7 @@ export class ActiveCollabApi implements ICredentialType {
             name: 'username',
             type: 'string' as NodePropertyTypes,
             default: '',
+
         },
         {
             displayName: 'Password',
@@ -29,6 +30,12 @@ export class ActiveCollabApi implements ICredentialType {
         {
             displayName: 'Project Owner (Company)',
             name: 'client_vendor',
+            type: 'string' as NodePropertyTypes,
+            default: '',
+        },
+        {
+            displayName: 'Server URL',
+            name: 'url',
             type: 'string' as NodePropertyTypes,
             default: '',
         },
