@@ -31,6 +31,7 @@
     "credentials": [
       "dist/credentials/ActionNetworkApi.credentials.js",
       "dist/credentials/ActiveCampaignApi.credentials.js",
+      "dist/credentials/ActiveCollabApi.credentials.js",
       "dist/credentials/AgileCrmApi.credentials.js",
       "dist/credentials/AcuitySchedulingApi.credentials.js",
       "dist/credentials/AcuitySchedulingOAuth2Api.credentials.js",
@@ -312,6 +313,7 @@
       "dist/nodes/ActionNetwork/ActionNetwork.node.js",
       "dist/nodes/ActiveCampaign/ActiveCampaign.node.js",
       "dist/nodes/ActiveCampaign/ActiveCampaignTrigger.node.js",
+      "dist/nodes/ActiveCollab/ActiveCollab.node.js",
       "dist/nodes/AgileCrm/AgileCrm.node.js",
       "dist/nodes/Airtable/Airtable.node.js",
       "dist/nodes/Airtable/AirtableTrigger.node.js",
