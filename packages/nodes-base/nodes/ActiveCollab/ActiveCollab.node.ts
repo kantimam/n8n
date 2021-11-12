@@ -9,7 +9,6 @@ import {
     INodeTypeDescription,
 } from 'n8n-workflow';
 
-import {AxiosResponse} from 'axios';
 
 
 //import { Client } from "activecollab_node_sdk";
@@ -97,6 +96,14 @@ export class ActiveCollab implements INodeType {
                 description:'Primary email for the contact',
             },
              */
+            {
+                displayName: 'Project ID',
+                name: 'projectId',
+                type: 'string',
+                required: true,
+                default:'',
+                description:'id of the connected project',
+            },
         ],
     };
 
@@ -115,66 +122,48 @@ export class ActiveCollab implements INodeType {
             await client.issueToken();
             const returnData: IDataObject[] = [];
 
-            const projects: AxiosResponse = await client.get("projects");
-            if(!projects || !projects.data) return [this.helpers.returnJsonArray([])];
+            //const projects: AxiosResponse = await client.get("projects");
+            //if(!projects || !projects.data) return [this.helpers.returnJsonArray([])];
 
-            const projectsDataObj: IDataObject={projects: projects.data}
+            //const projectsDataObj: IDataObject={projects: projects.data}
             
-            returnData.push(projectsDataObj)
+            //returnData.push(projectsDataObj)
 
             const items = this.getInputData();
             returnData.push({'receivedItems': items});
             
-            //const resource = this.getNodeParameter('resource', 0) as string;
+            const projectId = this.getNodeParameter('projectId', 0) as string;
+
+
+            items.forEach(async(item: any)=>{
+                const title=item.json.body.object_attributes.title;
+                if(title){
+                    const createdTask=await client.post(`projects/${projectId}/tasks`, {
+                        name: title
+                    })
+                    returnData.push({
+                        createdTask: createdTask.data
+                    })
+                }else{
+                    const createdTask=await client.post(`projects/${projectId}/tasks`, {
+                        name: `Task created at ${Date.now().toLocaleString()}`
+                    })
+                    returnData.push({
+                        createdTask: createdTask.data
+                    })
+                }
+            })
+
+            
+
+            
+
             //const operation = this.getNodeParameter('operation', 0) as string;
             const resource = 'contact';
             const operation = 'create';
             //Get credentials the user provided for this node
         
 
-            /*
-            for (let i = 0; i < items.length; i++) {
-                if (resource === 'contact') {
-                    if (operation === 'create') {
-                        // get email input
-                        const email = this.getNodeParameter('email', i) as string;
-        
-                        // i = 1 returns ricardo@n8n.io
-                        // i = 2 returns hello@n8n.io
-        
-                        // get additional fields input
-                        const additionalFields = this.getNodeParameter('additionalFields', i) as IDataObject;
-                        const data: IDataObject = {
-                            email,
-                        };
-        
-                        Object.assign(data, additionalFields);
-        
-                        //Make http request according to <https://sendgrid.com/docs/api-reference/>
-                        
-                        
-                        const options: OptionsWithUri = {
-                            headers: {
-                                'Accept': 'application/json',
-                                'Authorization': `Bearer ${credentials.apiKey}`,
-                            },
-                            method: 'PUT',
-                            body: {
-                                contacts: [
-                                    data,
-                                ],
-                            },
-                            uri: `https://api.sendgrid.com/v3/marketing/contacts`,
-                            json: true,
-                        };
-        
-                        responseData = await this.helpers.request(options);
-                        returnData.push(responseData);
-                        
-                    }
-                }
-            }
-            */
             // Map data to n8n data structure
             return [this.helpers.returnJsonArray(returnData)];
                 //const projects = await client.get("projects");
