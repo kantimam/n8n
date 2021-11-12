@@ -1,3 +1,4 @@
+import { update } from 'lodash';
 import {
     IExecuteFunctions,
 } from 'n8n-core';
@@ -129,39 +130,89 @@ export class ActiveCollab implements INodeType {
             
             //returnData.push(projectsDataObj)
 
+
+            const descriptionWithRepoUrl=(description: string, url: string)=>`gitlab issue url: ${url} <br /><br /> ${description}`;
+
+
+
             const items = this.getInputData();
             returnData.push({'receivedItems': items});
             
             const projectId = this.getNodeParameter('projectId', 0) as string;
 
+            const gitlabEvent: any=items[0];
+            if(gitlabEvent){
+                try {
+                    const object_attributes=gitlabEvent.json.body.object_attributes;
+            
+                    if(object_attributes) {
+                        //console.log(object_attributes);
+                        //console.log(changes)
+                        const {title="", description="", url="", action}=object_attributes;
+                        
+                        if(action==='update'){ // handle gitlab issue update
+                            const changes=gitlabEvent.json.body.changes;
+                            if(changes){
+                                let prevTitle=title;
+                                if(changes.title && changes.title.previous){
+                                    prevTitle=changes.title.previous;
+                                }
+                                // get projects tasks
+                                const res=await client.get(`projects/${projectId}/tasks`);
+                                const tasksData=res.data;
 
-            items.forEach(async(item: any)=>{
-                const title=item.json.body.object_attributes.title;
-                if(title){
-                    const createdTask=await client.post(`projects/${projectId}/tasks`, {
-                        name: title
-                    })
-                    returnData.push({
-                        createdTask: createdTask.data
-                    })
-                }else{
-                    const createdTask=await client.post(`projects/${projectId}/tasks`, {
-                        name: `Task created at ${Date.now().toLocaleString()}`
-                    })
-                    returnData.push({
-                        createdTask: createdTask.data
-                    })
+                                if(!tasksData) throw Error('could not load tasks data')
+                                
+                                console.log(tasksData);
+                                returnData.push({
+                                    tasksData
+                                })
+
+                                const tasks: any[]=tasksData.tasks;
+                                if(!tasks) throw Error('could not load tasks')
+
+                                const foundTask=tasks.find(task=>{
+                                    //console.log("task: "+task.name+" git: "+prevTitle);
+                                    return task.name==prevTitle
+                                });
+                                if(foundTask){ // if task with the same name was found update it
+                                    const updatedProps: any={};
+                                    if(changes.title) updatedProps.name=title;
+                                    if(changes.description) updatedProps.body=descriptionWithRepoUrl(description, url);
+
+                                    const updateResponse=await client.put(`projects/${projectId}/tasks/${foundTask.id}`, updatedProps);
+                                    returnData.push({
+                                        updatedTask: updateResponse.data
+                                    })
+                                }else{ // create a new task
+                                    console.log("task does not exist yet, creating new");
+                                    const createResponse=await client.post(`projects/${projectId}/tasks`, {
+                                        name: title,
+                                        body: descriptionWithRepoUrl(description, url)
+                                    })
+                                    returnData.push({
+                                        createdTask: createResponse.data
+                                    })
+                                }
+                                
+                            }
+                        }
+                        else{
+                            const createResponse=await client.post(`projects/${projectId}/tasks`, {
+                                name: title,
+                                body: descriptionWithRepoUrl(description, url)
+                            })
+                            returnData.push({
+                                createdTask: createResponse.data
+                            })
+                        }
+                    };
+                } catch (error) {
+                    console.log(error);
+                    throw Error('failed to create task from gitlab issue');
                 }
-            })
-
-            
-
-            
-
-            //const operation = this.getNodeParameter('operation', 0) as string;
-            const resource = 'contact';
-            const operation = 'create';
-            //Get credentials the user provided for this node
+                
+            }
         
 
             // Map data to n8n data structure
