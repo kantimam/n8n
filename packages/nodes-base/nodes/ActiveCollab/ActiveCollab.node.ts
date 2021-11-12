@@ -123,14 +123,6 @@ export class ActiveCollab implements INodeType {
             await client.issueToken();
             const returnData: IDataObject[] = [];
 
-            //const projects: AxiosResponse = await client.get("projects");
-            //if(!projects || !projects.data) return [this.helpers.returnJsonArray([])];
-
-            //const projectsDataObj: IDataObject={projects: projects.data}
-            
-            //returnData.push(projectsDataObj)
-
-
             const descriptionWithRepoUrl=(description: string, url: string)=>`gitlab issue url: ${url} <br /><br /> ${description}`;
 
 
@@ -146,8 +138,6 @@ export class ActiveCollab implements INodeType {
                     const object_attributes=gitlabEvent.json.body.object_attributes;
             
                     if(object_attributes) {
-                        //console.log(object_attributes);
-                        //console.log(changes)
                         const {title="", description="", url="", action}=object_attributes;
                         
                         if(action==='update'){ // handle gitlab issue update
@@ -163,7 +153,6 @@ export class ActiveCollab implements INodeType {
 
                                 if(!tasksData) throw Error('could not load tasks data')
                                 
-                                console.log(tasksData);
                                 returnData.push({
                                     tasksData
                                 })
@@ -194,7 +183,6 @@ export class ActiveCollab implements INodeType {
                                         createdTask: createResponse.data
                                     })
                                 }
-                                
                             }
                         }
                         else{
@@ -214,10 +202,8 @@ export class ActiveCollab implements INodeType {
                 
             }
         
-
             // Map data to n8n data structure
             return [this.helpers.returnJsonArray(returnData)];
-                //const projects = await client.get("projects");
           } catch (error) {
             console.log(error);
             return [this.helpers.returnJsonArray([])];
