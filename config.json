@@ -1,0 +1,11 @@
+{
+    "host": "194.195.244.224",
+    "security":{
+        "basicAuth": {
+            "active": true,
+            "user": "ondigo",
+            "password":  "AoYUMS6M2BERitoNXXx7"
+        }
+    }
+    
+}

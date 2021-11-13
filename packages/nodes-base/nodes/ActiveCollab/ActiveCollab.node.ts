@@ -10,14 +10,10 @@ import {
     INodeTypeDescription,
 } from 'n8n-workflow';
 
-
-
-//import { Client } from "activecollab_node_sdk";
-
-
 // @ts-ignore
-//const {Client} =require('./lib/Client/Client.js')
 import Client from './lib/src/activeCollabLib'
+
+const md = require('markdown-it')();
 
 export class ActiveCollab implements INodeType {
     description: INodeTypeDescription = {
@@ -72,17 +68,20 @@ export class ActiveCollab implements INodeType {
 
             const items = this.getInputData();
             returnData.push({'receivedItems': items});
-            
+
             const projectId = this.getNodeParameter('projectId', 0) as string;
 
             const gitlabEvent: any=items[0];
             if(gitlabEvent){
                 try {
                     const object_attributes=gitlabEvent.json.body.object_attributes;
-            
+
                     if(object_attributes) {
                         const {title="", description="", url="", action}=object_attributes;
-                        
+												const parsedDescription = md.render(description);
+												console.log(parsedDescription);
+												const extendedDescription=descriptionWithRepoUrl(parsedDescription, url);
+
                         if(action==='update'){ // handle gitlab issue update
                             const changes=gitlabEvent.json.body.changes;
                             if(changes){
@@ -95,7 +94,7 @@ export class ActiveCollab implements INodeType {
                                 const tasksData=res.data;
 
                                 if(!tasksData) throw Error('could not load tasks data')
-                                
+
                                 returnData.push({
                                     tasksData
                                 })
@@ -110,7 +109,7 @@ export class ActiveCollab implements INodeType {
                                 if(foundTask){ // if task with the same name was found update it
                                     const updatedProps: any={};
                                     if(changes.title) updatedProps.name=title;
-                                    if(changes.description) updatedProps.body=descriptionWithRepoUrl(description, url);
+                                    if(changes.description) updatedProps.body=extendedDescription
 
                                     const updateResponse=await client.put(`projects/${projectId}/tasks/${foundTask.id}`, updatedProps);
                                     returnData.push({
@@ -120,7 +119,7 @@ export class ActiveCollab implements INodeType {
                                     console.log("task does not exist yet, creating new");
                                     const createResponse=await client.post(`projects/${projectId}/tasks`, {
                                         name: title,
-                                        body: descriptionWithRepoUrl(description, url)
+                                        body: extendedDescription
                                     })
                                     returnData.push({
                                         createdTask: createResponse.data
@@ -131,7 +130,7 @@ export class ActiveCollab implements INodeType {
                         else{
                             const createResponse=await client.post(`projects/${projectId}/tasks`, {
                                 name: title,
-                                body: descriptionWithRepoUrl(description, url)
+                                body: extendedDescription
                             })
                             returnData.push({
                                 createdTask: createResponse.data
@@ -142,9 +141,9 @@ export class ActiveCollab implements INodeType {
                     console.log(error);
                     throw Error('failed to create task from gitlab issue');
                 }
-                
+
             }
-        
+
             // Map data to n8n data structure
             return [this.helpers.returnJsonArray(returnData)];
           } catch (error: any) {
@@ -152,7 +151,6 @@ export class ActiveCollab implements INodeType {
             throw Error('failed to init Active Collab connection');
 
           }
-        
+
     }
 }
- 
